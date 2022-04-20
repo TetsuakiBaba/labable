@@ -15,7 +15,7 @@ function checkin(dom) {
     }
 
     const icon = document.querySelector('#icon').value;
-    const channel = "test";//document.querySelector('#channel').value;
+    const channel = document.querySelector('#channel').value;
     const message = document.querySelector('#message').value;
 
     if (37.5 <= temp) {
@@ -52,7 +52,7 @@ function checkout(dom) {
     const name = document.querySelector('#name').value;
     const temp = document.querySelector('#temp').value;
     const icon = document.querySelector('#icon').value;
-    const channel = "test";//document.querySelector('#channel').value;
+    const channel = document.querySelector('#channel').value;
     const message = document.querySelector('#message').value;
     const obj = {
         name: name,

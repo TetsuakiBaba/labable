@@ -1,7 +1,7 @@
 # labable
-研究室入退室をSlackを利用して簡単に管理するためのツール
+研究室入退室をSlackを利用して簡単に管理するためのツール。slackのwebhook URLを利用して、phpとjsで任意のslackチャンネルに入退室を通知します。コロナ禍なのでその日の体温を申告します。
 
-## Get Start
+## はじめる
 
     git clone https://github.com/TetsuakiBaba/labable.git
     echo '<?php $url = "ここにはslackのカスタムインテグレーションから取得したIncoming Webhook URLを記入する"; ?>' > slack_url.php
