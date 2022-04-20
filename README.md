@@ -13,5 +13,7 @@
 
 webhook URLの取得については https://slack.com/intl/ja-jp/help/articles/115005265063-Slack-%E3%81%A7%E3%81%AE-Incoming-Webhook-%E3%81%AE%E5%88%A9%E7%94%A8 を参照してください。
 
+## License
+  * APP ICON: <a href="https://www.flaticon.com/free-icons/portfolio" title="portfolio icons">Portfolio icons created by Freepik - Flaticon</a>
 ## Reference
   * phpでSlackにメッセージを送る：https://qiita.com/kdtsh/items/814e766080a9761b14a7
