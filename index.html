@@ -94,6 +94,21 @@
                             class="form-control" aria-describedby="passwordHelpInline">
                     </div>
                 </div>
+                <div class="row g-3 mt-1 align-items-center">
+                    <div class="col-5">
+                        <label for="inputPassword6" class="col-form-label">移動方法</label>
+                    </div>
+                    <div class="col-7">
+
+                        <select class="form-select" aria-label="Default select example" id="select_how_to_move"
+                            onchange="saveText(this)">
+                            <option value="0" selected>徒歩または自転車</option>
+                            <option value="1">電車バス1時間以内</option>
+                            <option value="2">電車バス2時間以内</option>
+                            <option value="3">電車バス2時間以上</option>
+                        </select>
+                    </div>
+                </div>
 
                 <div class="row g-3 mt-1 align-items-center">
                     <div class="col-5">
@@ -110,7 +125,7 @@
                         <label for="inputPassword6" class="col-form-label">私は注意事項を理解しました</label>
                     </div>
                     <div class="col-1">
-                        <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault" checked>
+                        <input class="form-check-input" type="checkbox" value="" id="agree_checkbox" checked>
                     </div>
 
                     <div class="col-6" style="text-align:right;">
