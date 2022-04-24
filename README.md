@@ -4,10 +4,15 @@
 <img src="Apr-21-2022 03-38-41.gif">
 
 ## はじめる
+
+1. https://tetsuakibaba.jp/project/labable/getStart.html にアクセス
+2. 登録したいslackの webhook URLとチャンネルを入力して create ボタンを押す
+3. 生成されたリンクにアクセスして利用開始です。
+
+ローカル環境でテスト動作させる場合は以下の手順。
  ```
 git clone https://github.com/TetsuakiBaba/labable.git
 cd labable
-echo '<?php $url = "ここにはslackのカスタムインテグレーションから取得したIncoming Webhook URLを記入する"; ?>' > slack_url.php
 php -S locahost:8000
 ```
 
