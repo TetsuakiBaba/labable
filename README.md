@@ -13,6 +13,7 @@
  ```
 git clone https://github.com/TetsuakiBaba/labable.git
 cd labable
+echo '<?php $sslkey = 'j2hgnau-ajhnal1yfhaskxznbhr8d81fADFantuapqvgmw'; ?>' > sslkey.php
 php -S locahost:8000
 ```
 

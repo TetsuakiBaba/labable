@@ -110,6 +110,13 @@ function checkout(dom) {
 }
 
 function saveText(obj) {
+    if (obj.id == 'temp') {
+        if (obj.value <= 35.4 || obj.value >= 37.5) {
+            alert('入構申請できる体温は35.5〜37.4℃です。');
+            obj.value = 36.8;
+            document.querySelector('#range_temp').value = 36.8;
+        }
+    }
     localStorage.setItem(`labable_${obj.id}`, obj.value);
 }
 window.onload = function () {
@@ -122,16 +129,27 @@ window.onload = function () {
 
     // getメソッド
     if (!params.get('posturl') || !params.get('ch')) {
-        alert('Invalid URL');
+        alert('Invalid URL：無効なリンクです。リンク配布者に確認をするか、アクセスリンク作成ページから正しいリンクを作成してください');
         window.location.href = "./getStart.html";
         return;
     }
     posturl = params.get('posturl');
-    console.log(posturl);
+    //console.log(posturl);
 
     document.querySelector('#name').value = localStorage.getItem('labable_name');
     document.querySelector('#temp').value = localStorage.getItem('labable_temp');
+    document.querySelector('#range_temp').value = localStorage.getItem('labable_temp');
     document.querySelector('#channel').value = params.get('ch');
+
+    document.querySelector('#range_temp').addEventListener('input', function () {
+        document.querySelector('#temp').value = this.value;
+        saveText(
+            {
+                id: 'temp',
+                value: this.value
+            }
+        );
+    })
 
     let num_selected = localStorage.getItem('labable_select_how_to_move');
     if (!num_selected) {
