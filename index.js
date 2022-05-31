@@ -7,18 +7,38 @@ function showToast(_message) {
     document.querySelector('#toast_message').innerHTML = _message;
     myToast.show();
 }
+
+function checkinout(dom) {
+    console.log(dom.checked);
+    if (dom.checked == true) {
+        if (!checkin(dom)) {
+            dom.checked = false;
+        } else {
+            localStorage.setItem('labable_checkinout_checkbox', 1);
+        }
+    }
+    else {
+        if (!checkout(dom)) {
+            dom.checked = true;
+        }
+        else {
+            localStorage.setItem('labable_checkinout_checkbox', 0);
+        }
+    }
+    console.log(localStorage.getItem('labable_checkinout_checkbox'));
+}
 function checkin(dom) {
     const name = document.querySelector('#name').value;
     const temp = document.querySelector('#temp').value;
 
     if (!name || !temp) {
         alert("名前、体温を記入してください");
-        return;
+        return false;
     }
 
     if (!document.querySelector('#agree_checkbox').checked) {
         alert("注意事項に同意してください");
-        return;
+        return false;
     }
 
 
@@ -29,7 +49,7 @@ function checkin(dom) {
 
     if (37.5 <= temp) {
         alert("無理をせずお家で休みましょう");
-        return;
+        return false;
     }
 
     const obj = {
@@ -37,7 +57,8 @@ function checkin(dom) {
         channel: channel,
         icon_emoji: icon,
         text: `*IN @ ${temp} [${how_to_move}]* ${message}`,
-        posturl: posturl
+        posturl: posturl,
+        inout: 'in'
     };
 
     const method = "POST";
@@ -52,6 +73,25 @@ function checkin(dom) {
         })
         .then(res => {
             showToast(res.message);
+            let users = JSON.parse(res.users);
+            if( users.length > 0 ){
+                document.querySelector('#area_onsite_users').hidden = false;
+                 // すでにあるspan要素をすべて削除する
+                 let spans = document.querySelectorAll('#area_onsite_users span');
+                 for( span of spans){
+                     span.remove();
+                 }
+                for (user of users) {
+                    let span = document.createElement('span');
+                    span.classList = "badge rounded-pill bg-success";
+                    span.innerHTML = user;
+                    document.querySelector('#area_onsite_users').appendChild(span);
+                    document.querySelector('#area_onsite_users').hidden = false;
+                }
+            }
+            else{
+                document.querySelector('#area_onsite_users').hidden = true;
+            }
         })
         .catch(console.error);
 
@@ -59,6 +99,7 @@ function checkin(dom) {
     setTimeout(function () {
         dom.disabled = false;
     }, 1000);
+    return true;
 }
 
 function is_json(data) {
@@ -71,10 +112,9 @@ function is_json(data) {
 }
 
 function checkout(dom) {
-    if (!document.querySelector('#agree_checkbox').checked) {
-        alert("注意事項に同意してください");
-        return;
-    }
+
+
+
 
     const name = document.querySelector('#name').value;
     const temp = document.querySelector('#temp').value;
@@ -83,12 +123,25 @@ function checkout(dom) {
     const message = document.querySelector('#message').value;
     const how_to_move = document.querySelector('#select_how_to_move').options[document.querySelector('#select_how_to_move').selectedIndex].innerHTML;
 
+
+    if (!name || !temp) {
+        alert("名前、体温を記入してください");
+        return false;
+    }
+
+    if (!document.querySelector('#agree_checkbox').checked) {
+        alert("注意事項に同意してください");
+        return false;
+    }
+
+
     const obj = {
         name: name,
         channel: channel,
         icon_emoji: icon,
         text: `*OUT [${how_to_move}]* ${message}`,
-        posturl: posturl
+        posturl: posturl,
+        inout: 'out'
     };
     const method = "POST";
     const body = JSON.stringify(obj);
@@ -100,6 +153,26 @@ function checkout(dom) {
         .then(response => response.json()) // 帰ってきた値をjsonにして次に渡す
         .then(res => {
             showToast(res.message);
+            let users = JSON.parse(res.users);
+            if( users.length > 0 ){
+                document.querySelector('#area_onsite_users').hidden = false;
+                // すでにあるspan要素をすべて削除する
+                let spans = document.querySelectorAll('#area_onsite_users span');
+                for( span of spans){
+                    span.remove();
+                }
+
+                for (user of users) {
+                    let span = document.createElement('span');
+                    span.classList = "badge rounded-pill bg-success";
+                    span.innerHTML = user;
+                    document.querySelector('#area_onsite_users').appendChild(span);
+                    document.querySelector('#area_onsite_users').hidden = false;
+                }
+            }
+            else{
+                document.querySelector('#area_onsite_users').hidden = true;
+            }
         })
         .catch(console.error);
 
@@ -107,6 +180,7 @@ function checkout(dom) {
     setTimeout(function () {
         dom.disabled = false;
     }, 1000);
+    return true;
 }
 
 function saveText(obj) {
@@ -119,6 +193,53 @@ function saveText(obj) {
     }
     localStorage.setItem(`labable_${obj.id}`, obj.value);
 }
+
+function getInMembers() {
+    // test
+    const name = document.querySelector('#name').value;
+    const channel = document.querySelector('#channel').value;
+
+    const obj = {
+        name: name,
+        channel: channel,
+        posturl: posturl
+    };
+
+    const method = "POST";
+    const body = JSON.stringify(obj);
+    const headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+    };
+    fetch("./getInMembers.php", { method, headers, body })
+        .then(response => {
+            return response.json();
+        })
+        .then(res => {
+            let users = JSON.parse(res.users);
+            if( users.length > 0 ){
+                document.querySelector('#area_onsite_users').hidden = false;
+                 // すでにあるspan要素をすべて削除する
+                 let spans = document.querySelectorAll('#area_onsite_users span');
+                 for( span of spans){
+                     span.remove();
+                 }
+                for (user of users) {
+                    let span = document.createElement('span');
+                    span.classList = "badge bg-success me-2";
+                    span.innerHTML = user;
+                    document.querySelector('#area_onsite_users').appendChild(span);
+                    document.querySelector('#area_onsite_users').hidden = false;
+                }
+            }
+            else{
+                document.querySelector('#area_onsite_users').hidden = true;
+            }
+            
+        })
+        .catch(console.error);
+}
+
 window.onload = function () {
 
     // URLを取得
@@ -140,7 +261,9 @@ window.onload = function () {
     document.querySelector('#temp').value = localStorage.getItem('labable_temp');
     document.querySelector('#range_temp').value = localStorage.getItem('labable_temp');
     document.querySelector('#channel').value = params.get('ch');
+    document.querySelector('#checkinout_checkbox').checked = Boolean(parseInt(localStorage.getItem('labable_checkinout_checkbox'), 10));
 
+    console.log(localStorage.getItem('labable_checkinout_checkbox'));
     document.querySelector('#range_temp').addEventListener('input', function () {
         document.querySelector('#temp').value = this.value;
         saveText(
@@ -172,4 +295,5 @@ window.onload = function () {
         document.querySelector('#message').value = localStorage.getItem('labable_message');
     }
 
+    getInMembers();
 }

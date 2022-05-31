@@ -1,4 +1,4 @@
-<?php 
+<?php
 require "sslkey.php";
 
 $raw = file_get_contents('php://input'); // POSTされた生のデータを受け取る
@@ -28,10 +28,48 @@ curl_setopt_array($ch, $options);
 $ret_exec = curl_exec($ch);
 curl_close($ch);
 
+
+if ($json_string = @file_get_contents($data->posturl . ".json")) {
+    // 成功（ファイルがある場合）
+    // $result = "success";
+    $json_string_encoded = mb_convert_encoding($json_string, 'UTF8', 'ASCII,JIS,UTF-8,EUC-JP,SJIS-WIN');
+    $users = json_decode($json_string_encoded, true);
+    $result = json_encode($users);
+    if ($data->inout == 'in') {
+        array_push($users, $data->name);
+    } else {
+        // 退出するときは自分の名前を探して削除
+        while (($index = array_search($data->name, $users, true)) !== false) {
+            unset($users[$index]);
+        }
+        $users = array_values($users);
+    }
+    $users = array_unique($users);
+    $result = json_encode($users);
+    $json = fopen($data->posturl . '.json', 'w+b');
+    fwrite($json, json_encode($users));
+    fclose($json);
+} else {
+    // 失敗（ファイルがない場合）
+    //echo "failed";
+    if ($data->inout == 'in') {
+        $obj = [$data->name];
+        $obj_json_string = $obj; //json_decode($obj, true);
+
+        $json = fopen($data->posturl . '.json', 'w+b');
+        fwrite($json, json_encode($obj_json_string));
+        fclose($json);
+        $result = json_encode([$data->name]);
+    }
+    else{
+        $result = json_encode("");
+    }
+}
+
+
 $res = [
-    "message" => "#".$data->channel." に送信が完了しました。"
+    "message" => "#" . $data->channel . " に送信が完了しました。",
+    "users" => $result
 ];
 
 echo json_encode($res);
-?>
-
