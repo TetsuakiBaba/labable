@@ -7,12 +7,21 @@ $data = json_decode($raw); // json形式をphp変数に変換
 $posturl = openssl_decrypt(hex2bin($data->posturl), 'AES-128-ECB', $sslkey, OPENSSL_RAW_DATA);
 
 
-$message = [
-    "channel" => $data->channel,
-    "username" => $data->name,
-    "text" => $data->text,
-    "icon_emoji" => $data->icon_emoji
-];
+if ($data->inout == "in") {
+    $message = [
+        "channel" => $data->channel,
+        "username" => $data->name,
+        "text" => "[IN] " . $data->text,
+        "icon_emoji" => $data->icon_emoji
+    ];
+} else {
+    $message = [
+        "channel" => $data->channel,
+        "username" => $data->name,
+        "text" => "[OUT] " . $data->text,
+        "icon_emoji" => $data->icon_emoji
+    ];
+}
 
 $ch = curl_init();
 $options = [
@@ -35,16 +44,30 @@ if ($json_string = @file_get_contents($data->posturl . ".json")) {
     $json_string_encoded = mb_convert_encoding($json_string, 'UTF8', 'ASCII,JIS,UTF-8,EUC-JP,SJIS-WIN');
     $users = json_decode($json_string_encoded, true);
     $result = json_encode($users);
+    // 入室する時
     if ($data->inout == 'in') {
-        array_push($users, $data->name);
-    } else {
+        //array_push($users, $data->name);
+        array_push($users, ['name' => $data->name, 'timestamp' => $data->timestamp, 'text' => $data->text]);
+    }
+    // 退出する時
+    else {
         // 退出するときは自分の名前を探して削除
-        while (($index = array_search($data->name, $users, true)) !== false) {
-            unset($users[$index]);
+        $index = 0;
+        foreach ($users as $user) {
+            if ($data->name == $user['name']) {
+                unset($users[$index]);
+            }
+            $index++;
         }
         $users = array_values($users);
     }
-    $users = array_unique($users);
+    //$users = array_unique($users, SORT_REGULAR);
+    $users = array_reduce($users, function ($carry, $item) {
+        if (!in_array($item, $carry)) {
+            $carry[] = $item;
+        }
+        return $carry;
+    }, []);
     $result = json_encode($users);
     $json = fopen($data->posturl . '.json', 'w+b');
     fwrite($json, json_encode($users));
@@ -53,15 +76,14 @@ if ($json_string = @file_get_contents($data->posturl . ".json")) {
     // 失敗（ファイルがない場合）
     //echo "failed";
     if ($data->inout == 'in') {
-        $obj = [$data->name];
+        $obj = [['name' => $data->name, 'timestamp' => $data->timestamp, 'message' => $data->message]];
         $obj_json_string = $obj; //json_decode($obj, true);
 
         $json = fopen($data->posturl . '.json', 'w+b');
         fwrite($json, json_encode($obj_json_string));
         fclose($json);
         $result = json_encode([$data->name]);
-    }
-    else{
+    } else {
         $result = json_encode("");
     }
 }
