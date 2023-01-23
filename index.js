@@ -36,7 +36,7 @@ function updateOnsiteUsers(users) {
 
     // オンサイトのユーザ数だけ追加する
     let count = 0;
-    for (user of users) {
+    for (let user of users) {
         // 自分の名前と等しいのがいる場合はI'm IN nowに変更する
         if (user.name == document.querySelector('#name').value) {
             document.querySelector('#checkinout_checkbox').checked = true;
@@ -46,9 +46,15 @@ function updateOnsiteUsers(users) {
         span.classList = "mt-2 mb-2 badge bg-success me-2 position-relative";
 
         let text_preview = user.text;
-        if (text_preview.length > 8) {
-            text_preview = text_preview.slice(0, 8);
-            text_preview += '...';
+        if (user.text) {
+            if (text_preview.length > 8) {
+                text_preview = text_preview.slice(0, 8);
+                text_preview += '...';
+            }
+        }
+        else {
+            text_preview = '';
+            user.text = '';
         }
         span.innerHTML = user.name + ` <span class="align-bottom" id="clock_${count}"></span>
         <span style="position:absolute;top:-5px;left:-5px;opacity:0.8;font-size:0.6em;" class="badge translate-middle-y rounded-pill bg-light text-secondary">${text_preview}</span>`;
