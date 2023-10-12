@@ -6,51 +6,15 @@ $data = json_decode($raw); // json形式をphp変数に変換
 
 $posturl = openssl_decrypt(hex2bin($data->posturl), 'AES-128-ECB', $sslkey, OPENSSL_RAW_DATA);
 
-function getScore($name)
-{
-    global $data;
-    $scoreFile = $data->posturl . "_score.json";
-    if (file_exists($scoreFile)) {
-        $scores = json_decode(file_get_contents($scoreFile), true);
-        foreach ($scores as $score) {
-            if ($score['name'] == $name) {
-                return $score['score'];
-            }
-        }
-        $scores[] = ['name' => $name, 'score' => 0];
-        file_put_contents($scoreFile, json_encode($scores));
-    } else {
-        $scores = [['name' => $name, 'score' => 0]];
-        file_put_contents($scoreFile, json_encode($scores));
-    }
-    return 0;
-}
-
-function addScore($name)
-{
-    global $data;
-    $scoreFile = $data->posturl . "_score.json";
-    $scores = json_decode(file_get_contents($scoreFile), true);
-    foreach ($scores as &$score) {
-        if ($score['name'] == $name) {
-            $score['score']++;
-            file_put_contents($scoreFile, json_encode($scores));
-            return $score['score'];
-        }
-    }
-}
 
 if ($data->inout == "in") {
-    $score = getScore($data->name);
-    $score++;
     $message = [
         "channel" => $data->channel,
         "username" => $data->name,
-        "text" => "[IN] " . $data->text . " (入室回数: $score)",
+        "text" => "[IN] " . $data->text,
         "icon_emoji" => $data->icon_emoji
     ];
 } else {
-    $score = getScore($data->name);
     $message = [
         "channel" => $data->channel,
         "username" => $data->name,
@@ -73,14 +37,21 @@ curl_setopt_array($ch, $options);
 $ret_exec = curl_exec($ch);
 curl_close($ch);
 
+
 if ($json_string = @file_get_contents($data->posturl . ".json")) {
+    // 成功（ファイルがある場合）
+    // $result = "success";
     $json_string_encoded = mb_convert_encoding($json_string, 'UTF8', 'ASCII,JIS,UTF-8,EUC-JP,SJIS-WIN');
     $users = json_decode($json_string_encoded, true);
-
+    $result = json_encode($users);
+    // 入室する時
     if ($data->inout == 'in') {
-        $score = addScore($data->name);
-        array_push($users, ['name' => $data->name, 'timestamp' => $data->timestamp, 'text' => $data->text, 'score' => $score]);
-    } else {
+        //array_push($users, $data->name);
+        array_push($users, ['name' => $data->name, 'timestamp' => $data->timestamp, 'text' => $data->text]);
+    }
+    // 退出する時
+    else {
+        // 退出するときは自分の名前を探して削除
         $index = 0;
         foreach ($users as $user) {
             if ($data->name == $user['name']) {
@@ -90,22 +61,23 @@ if ($json_string = @file_get_contents($data->posturl . ".json")) {
         }
         $users = array_values($users);
     }
-
+    //$users = array_unique($users, SORT_REGULAR);
     $users = array_reduce($users, function ($carry, $item) {
         if (!in_array($item, $carry)) {
             $carry[] = $item;
         }
         return $carry;
     }, []);
-
     $result = json_encode($users);
     $json = fopen($data->posturl . '.json', 'w+b');
     fwrite($json, json_encode($users));
     fclose($json);
 } else {
+    // 失敗（ファイルがない場合）
+    //echo "failed";
     if ($data->inout == 'in') {
         $obj = [['name' => $data->name, 'timestamp' => $data->timestamp, 'message' => $data->message]];
-        $obj_json_string = $obj;
+        $obj_json_string = $obj; //json_decode($obj, true);
 
         $json = fopen($data->posturl . '.json', 'w+b');
         fwrite($json, json_encode($obj_json_string));
@@ -115,6 +87,7 @@ if ($json_string = @file_get_contents($data->posturl . ".json")) {
         $result = json_encode("");
     }
 }
+
 
 $res = [
     "message" => "#" . $data->channel . " に送信が完了しました。",

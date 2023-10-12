@@ -2,4 +2,5 @@ sslkey.php
 testurl_memo.txt
 upload.sh
 *.json
+!manufest.json
 .DS_Store/

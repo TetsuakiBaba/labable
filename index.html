@@ -6,6 +6,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
+    <!-- <link rel="manifest" href="manufest.json"> -->
+
     <!-- For old IEs -->
     <link rel="shortcut icon" href="./favicon/favicon.ico" />
 
@@ -175,12 +177,8 @@
                                 </div>
                                 <div class="modal-body">
                                     <ul class="list-styled mb-0">
-                                        <li>人同士の間隔を2m（最低1m）以上とり、三密を避ける</li>
-                                        <li>入室前に手洗い及び手の触れる箇所を適時消毒する</li>
-                                        <li>微熱や自覚症状等の健康不良が認められる場合は入構はできない</li>
-                                        <li>室内での飲食は禁止</li>
-                                        <li>消毒液、マスクなどを利用して感染予防に努める</li>
-                                        <li>新型コロナウィルスにおける社会状況を鑑み、十分注意した上で学内に入構する</li>
+                                        <li>健康不良が認められる場合はしっかり休む</li>
+                                        <li>必要に応じて消毒液、マスクなどを利用して感染予防に努める</li>
                                     </ul>
                                 </div>
                                 <div class="modal-footer">
@@ -222,13 +220,18 @@
                 <!--
                     Reference: https://www.cssscript.com/ios-vc-toggle-switch/
                 -->
-                <div class="text-right mt-4" style="text-align:right;">
+                <div class="clearfix" id="loading">
+                    <div class="spinner-border float-end text-success" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                <div id="toggle_switch" class="text-right mt-4" style="text-align:right;" hidden>
                     I'm
                     <div style="--vc-off-color: #dc3545" class="text-center d-inline-block">
                         <div class="vc-toggle-container">
                             <label class="vc-switch">
                                 <input type="checkbox" id="checkinout_checkbox" class="vc-switch-input"
-                                    onclick="checkinout(this)" />
+                                    onclick="checkinout(this)">
                                 <span data-on="IN" data-off="OUT" class="vc-switch-label"></span>
                                 <span class="vc-handle"></span>
                             </label>
@@ -386,7 +389,7 @@
 
 
         <!-- Optional JavaScript; choose one of the two! -->
-        <script src="./index.js?value=update5"></script>
+        <script src="./index.js?value=update6"></script>
         <!-- Option 1: Bootstrap Bundle with Popper -->
         <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"
             integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3"

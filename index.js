@@ -1,7 +1,6 @@
 var last_modified = `
-last modified: 2023/01/22 01:50:15
+last modified: 2023/10/04 11:52:25
 `;
-
 var posturl = "";
 
 function showToast(_message) {
@@ -25,6 +24,8 @@ function checkinout(dom) {
 
 }
 
+
+
 // POSTで帰ってきたobjectを渡す
 function updateOnsiteUsers(users) {
     document.querySelector('#area_onsite_users').hidden = false;
@@ -45,7 +46,7 @@ function updateOnsiteUsers(users) {
         let span = document.createElement('span');
         span.classList = "mt-2 mb-2 badge bg-success me-2 position-relative";
 
-        let text_preview = user.text;
+        let text_preview = `[${user.score}] ${user.text}`;
         if (user.text) {
             if (text_preview.length > 8) {
                 text_preview = text_preview.slice(0, 8);
@@ -62,7 +63,7 @@ function updateOnsiteUsers(users) {
         span.addEventListener('click', function () {
             document.querySelector('#modal_name').innerHTML = user.name;
             document.querySelector('#modal_timestamp').innerHTML = time;
-            document.querySelector('#modal_message').innerHTML = user.text;
+            document.querySelector('#modal_message').innerHTML = `入室回数：${user.score}<br>コメント：${user.text}`;
             const modal = new bootstrap.Modal(document.getElementById('modal_user_detail'));
             modal.show();
         })
@@ -113,6 +114,7 @@ function checkin(dom) {
         })
         .then(res => {
             showToast(res.message);
+            console.log(res);
             let users = JSON.parse(res.users);
             if (users.length > 0) {
                 updateOnsiteUsers(users);
@@ -211,7 +213,8 @@ function getInMembers() {
     const obj = {
         name: name,
         channel: channel,
-        posturl: posturl
+        posturl: posturl,
+        access: 'read'
     };
 
     const method = "POST";
@@ -225,6 +228,7 @@ function getInMembers() {
             return response.json();
         })
         .then(res => {
+
             let users = JSON.parse(res.users);
             if (users.length > 0) {
                 updateOnsiteUsers(users);
@@ -236,9 +240,47 @@ function getInMembers() {
         })
         .catch(console.error);
 }
+async function getInMembersAsync() {
+    try {
+        const name = document.querySelector('#name').value;
+        const channel = document.querySelector('#channel').value;
 
-window.onload = function () {
+        const obj = {
+            name: name,
+            channel: channel,
+            posturl: posturl
+        };
 
+        const method = "POST";
+        const body = JSON.stringify(obj);
+        const headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        };
+
+        const response = await fetch("./getInMembers.php", { method, headers, body });
+        const res = await response.json();
+
+
+
+        let users = JSON.parse(res.users);
+        console.log('取得：', users);
+        if (users.length > 0) {
+            updateOnsiteUsers(users);
+        } else {
+            document.querySelector('#area_onsite_users').hidden = true;
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+
+
+window.onload = async function () {
+
+    document.querySelector('#loading').hidden = false;
+    document.querySelector('#toggle_switch').hidden = true;
     // URLを取得
     let url = new URL(window.location.href);
 
@@ -265,5 +307,12 @@ window.onload = function () {
     }
 
     document.querySelector('#last_modified').innerText = last_modified;
-    getInMembers();
+    //getInMembers();
+    console.time('getInMembersAsync');
+    await getInMembersAsync();
+    console.timeEnd('getInMembersAsync');
+
+
+    document.querySelector('#loading').hidden = true;
+    document.querySelector('#toggle_switch').hidden = false;
 }
