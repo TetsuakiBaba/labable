@@ -30,7 +30,7 @@
 git clone https://github.com/TetsuakiBaba/labable.git
 cd labable
 echo '<?php $sslkey = 'set your ssl key here'; ?>' > sslkey.php
-php -S locahost:8000
+php -S localhost:8000
 ```
 
 ブラウザから localhost:8000 で閲覧してください。送信したいチャンネル合わせてindex.htmlのチャンネル欄の値を変更してください。phpコマンドがない場合はmacはbrew等でインストールしてあげてください。
