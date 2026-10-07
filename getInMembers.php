@@ -1,38 +1,25 @@
 <?php
-require "sslkey.php";
+/**
+ * 在室者一覧を返す。日付を跨いで入りっぱなしのユーザは自動で退出扱いにする。
+ */
+declare(strict_types=1);
+require __DIR__ . '/common.php';
 
-$raw = file_get_contents('php://input'); // POSTされた生のデータを受け取る
-$data = json_decode($raw); // json形式をphp変数に変換
+$data = labable_read_request();
+$webhook = labable_require_webhook($data);
+$token = labable_str($data, 'posturl', LABABLE_TOKEN_MAX_LEN);
 
-$result = "";
+$usersFile = labable_data_path($webhook, '.json', $token);
+$users = labable_read_json($usersFile);
 
-if ($json_string = @file_get_contents($data->posturl . ".json")) {
-
-    // 成功（ファイルがある場合）
-    $json_string_encoded = mb_convert_encoding($json_string, 'UTF8', 'ASCII,JIS,UTF-8,EUC-JP,SJIS-WIN');
-    $users = json_decode($json_string_encoded, true);
-
-    // $usersにあるデータで現在のタイムスタンプよりも1日ズレていればそのユーザは自動退出処理にする
-    $index = 0;
-    foreach ($users as $user) {
-        if (getdate($user['timestamp'])['mday'] != getdate()['mday']) {
-            unset($users[$index]);
-        }
-        //$user['phptime'] = getdate()['mday'];
-        $index++;
-    }
-    $users = array_values($users);
-    $result = json_encode($users);
-    $json = fopen($data->posturl . '.json', 'w+b');
-    fwrite($json, json_encode($users));
-    fclose($json);
-} else {
-    // 失敗（ファイルが内場合）
-    $result = json_encode("");
+if ($users === null) {
+    labable_respond(['users' => json_encode('')]);
 }
 
-$res = [
-    "users" => $result,
-];
-header("Content-type: application/json; charset=UTF-8");
-echo json_encode($res);
+$today = getdate()['mday'];
+$users = array_values(array_filter($users, function ($user) use ($today) {
+    return getdate((int)($user['timestamp'] ?? 0))['mday'] === $today;
+}));
+labable_write_json($usersFile, $users);
+
+labable_respond(['users' => json_encode($users, JSON_UNESCAPED_UNICODE)]);

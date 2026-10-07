@@ -1,124 +1,101 @@
 <?php
-require "sslkey.php";
+/**
+ * 入退室の通知を Slack に送り、在室者一覧と入室回数を更新する。
+ */
+declare(strict_types=1);
+require __DIR__ . '/common.php';
 
-$raw = file_get_contents('php://input'); // POSTされた生のデータを受け取る
-$data = json_decode($raw); // json形式をphp変数に変換
+$data = labable_read_request();
+$webhook = labable_require_webhook($data);
+$token = labable_str($data, 'posturl', LABABLE_TOKEN_MAX_LEN);
 
-$posturl = openssl_decrypt(hex2bin($data->posturl), 'AES-128-ECB', $sslkey, OPENSSL_RAW_DATA);
+$name = labable_str($data, 'name', 200);
+$channel = labable_str($data, 'channel', 200);
+$text = labable_str($data, 'text', 2000);
+$iconEmoji = labable_str($data, 'icon_emoji', 100);
+$inout = labable_str($data, 'inout', 10) === 'in' ? 'in' : 'out';
+$timestamp = (int)labable_str($data, 'timestamp', 20);
 
-function getScore($name)
+if ($name === '') {
+    labable_fail('name is required');
+}
+
+$usersFile = labable_data_path($webhook, '.json', $token);
+$scoreFile = labable_data_path($webhook, '_score.json', $token);
+
+/** 入室回数を取得する（未登録なら 0 で登録） */
+function getScore(string $scoreFile, string $name): int
 {
-    global $data;
-    $scoreFile = $data->posturl . "_score.json";
-    if (file_exists($scoreFile)) {
-        $scores = json_decode(file_get_contents($scoreFile), true);
-        foreach ($scores as $score) {
-            if ($score['name'] == $name) {
-                return $score['score'];
-            }
+    $scores = labable_read_json($scoreFile) ?? [];
+    foreach ($scores as $score) {
+        if (($score['name'] ?? null) === $name) {
+            return (int)($score['score'] ?? 0);
         }
-        $scores[] = ['name' => $name, 'score' => 0];
-        file_put_contents($scoreFile, json_encode($scores));
-    } else {
-        $scores = [['name' => $name, 'score' => 0]];
-        file_put_contents($scoreFile, json_encode($scores));
     }
+    $scores[] = ['name' => $name, 'score' => 0];
+    labable_write_json($scoreFile, $scores);
     return 0;
 }
 
-function addScore($name)
+/** 入室回数を 1 増やして返す */
+function addScore(string $scoreFile, string $name): int
 {
-    global $data;
-    $scoreFile = $data->posturl . "_score.json";
-    $scores = json_decode(file_get_contents($scoreFile), true);
+    $scores = labable_read_json($scoreFile) ?? [];
     foreach ($scores as &$score) {
-        if ($score['name'] == $name) {
-            $score['score']++;
-            file_put_contents($scoreFile, json_encode($scores));
+        if (($score['name'] ?? null) === $name) {
+            $score['score'] = (int)($score['score'] ?? 0) + 1;
+            labable_write_json($scoreFile, $scores);
             return $score['score'];
         }
     }
+    unset($score);
+    $scores[] = ['name' => $name, 'score' => 1];
+    labable_write_json($scoreFile, $scores);
+    return 1;
 }
 
-if ($data->inout == "in") {
-    $score = getScore($data->name);
-    $score++;
+$score = getScore($scoreFile, $name);
+if ($inout === 'in') {
     $message = [
-        "channel" => $data->channel,
-        "username" => $data->name,
-        "text" => "[IN] " . $data->text . " (入室回数: $score)",
-        "icon_emoji" => $data->icon_emoji
+        'channel' => $channel,
+        'username' => $name,
+        'text' => '[IN] ' . $text . ' (入室回数: ' . ($score + 1) . ')',
+        'icon_emoji' => $iconEmoji,
     ];
 } else {
-    $score = getScore($data->name);
     $message = [
-        "channel" => $data->channel,
-        "username" => $data->name,
-        "text" => "[OUT] " . $data->text,
-        "icon_emoji" => $data->icon_emoji
+        'channel' => $channel,
+        'username' => $name,
+        'text' => '[OUT] ' . $text,
+        'icon_emoji' => $iconEmoji,
     ];
 }
 
-$ch = curl_init();
-$options = [
-    CURLOPT_URL => $posturl,
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_SSL_VERIFYPEER => false,
-    CURLOPT_POST => true,
-    CURLOPT_POSTFIELDS => http_build_query([
-        'payload' => json_encode($message)
-    ])
-];
-curl_setopt_array($ch, $options);
-$ret_exec = curl_exec($ch);
-curl_close($ch);
+$sent = labable_post_to_slack($webhook, $message);
 
-if ($json_string = @file_get_contents($data->posturl . ".json")) {
-    $json_string_encoded = mb_convert_encoding($json_string, 'UTF8', 'ASCII,JIS,UTF-8,EUC-JP,SJIS-WIN');
-    $users = json_decode($json_string_encoded, true);
-
-    if ($data->inout == 'in') {
-        $score = addScore($data->name);
-        array_push($users, ['name' => $data->name, 'timestamp' => $data->timestamp, 'text' => $data->text, 'score' => $score]);
-    } else {
-        $index = 0;
-        foreach ($users as $user) {
-            if ($data->name == $user['name']) {
-                unset($users[$index]);
-            }
-            $index++;
-        }
-        $users = array_values($users);
-    }
-
-    $users = array_reduce($users, function ($carry, $item) {
-        if (!in_array($item, $carry)) {
-            $carry[] = $item;
-        }
-        return $carry;
-    }, []);
-
-    $result = json_encode($users);
-    $json = fopen($data->posturl . '.json', 'w+b');
-    fwrite($json, json_encode($users));
-    fclose($json);
+$users = labable_read_json($usersFile) ?? [];
+if ($inout === 'in') {
+    $score = addScore($scoreFile, $name);
+    $users[] = ['name' => $name, 'timestamp' => $timestamp, 'text' => $text, 'score' => $score];
 } else {
-    if ($data->inout == 'in') {
-        $obj = [['name' => $data->name, 'timestamp' => $data->timestamp, 'message' => $data->message]];
-        $obj_json_string = $obj;
-
-        $json = fopen($data->posturl . '.json', 'w+b');
-        fwrite($json, json_encode($obj_json_string));
-        fclose($json);
-        $result = json_encode([$data->name]);
-    } else {
-        $result = json_encode("");
-    }
+    $users = array_values(array_filter($users, function ($user) use ($name) {
+        return ($user['name'] ?? null) !== $name;
+    }));
 }
 
-$res = [
-    "message" => "#" . $data->channel . " に送信が完了しました。",
-    "users" => $result
-];
+// 重複を除去
+$users = array_reduce($users, function ($carry, $item) {
+    if (!in_array($item, $carry, true)) {
+        $carry[] = $item;
+    }
+    return $carry;
+}, []);
 
-echo json_encode($res);
+labable_write_json($usersFile, $users);
+
+labable_respond([
+    'message' => $sent
+        ? '#' . $channel . ' に送信が完了しました。'
+        : '#' . $channel . ' への送信に失敗しました。Webhook URL を確認してください。',
+    'users' => json_encode($users, JSON_UNESCAPED_UNICODE),
+]);

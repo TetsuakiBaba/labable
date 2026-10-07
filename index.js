@@ -1,5 +1,5 @@
 var last_modified = `
-last modified: 2023/10/13 08:53:28
+last modified: 2023/10/30 17:03:57
 `;
 var posturl = "";
 
@@ -41,8 +41,11 @@ function updateOnsiteUsers(users) {
         // 自分の名前と等しいのがいる場合はI'm IN nowに変更する
         if (user.name == document.querySelector('#name').value) {
             document.querySelector('#checkinout_checkbox').checked = true;
+            // 自分のスコアを確認して、入室回数を表示する
+            alert(`あなたは${user.score}回目の入室です。`);
         }
 
+        // span要素を作成して、バッジを追加する
         let span = document.createElement('span');
         span.classList = "mt-2 mb-2 badge bg-success me-2 position-relative";
 
@@ -115,6 +118,7 @@ function checkin(dom) {
         .then(res => {
             showToast(res.message);
             console.log(res);
+            if (!res.users) { return; }
             let users = JSON.parse(res.users);
             if (users.length > 0) {
                 updateOnsiteUsers(users);
@@ -176,6 +180,7 @@ function checkout(dom) {
         .then(response => response.json()) // 帰ってきた値をjsonにして次に渡す
         .then(res => {
             showToast(res.message);
+            if (!res.users) { return; }
             let users = JSON.parse(res.users);
             if (users.length > 0) {
                 updateOnsiteUsers(users);
@@ -260,8 +265,10 @@ async function getInMembersAsync() {
 
         const response = await fetch("./getInMembers.php", { method, headers, body });
         const res = await response.json();
-
-
+        if (res.error) {
+            showToast(res.message);
+            return;
+        }
 
         let users = JSON.parse(res.users);
         console.log('取得：', users);

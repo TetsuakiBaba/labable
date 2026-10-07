@@ -112,6 +112,11 @@
                     fetch("./encode.php", { method, headers, body })
                         .then(response => response.json()) // 帰ってきた値をjsonにして次に渡す
                         .then(res => {
+                            if (!res.token) {
+                                alert(res.error || 'リンクを作成できませんでした。');
+                                dom.disabled = false;
+                                return;
+                            }
                             let url = window.location.href;
                             url = url.replace('getStart.html', '');
                             let channel = document.querySelector('#input_channel').value;
@@ -121,7 +126,11 @@
                             document.querySelector('#a_link').href = url;
                             dom.disabled = false;
                         })
-                        .catch(console.error);
+                        .catch(err => {
+                            console.error(err);
+                            alert('リンクを作成できませんでした。');
+                            dom.disabled = false;
+                        });
                 }
             </script>
         </div>
